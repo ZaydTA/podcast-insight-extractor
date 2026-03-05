@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Podcast Insight Extractor</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <main>
+        <header>
+            <h1>Podcast Insight Extractor</h1>
+            <p class="subtitle">Paste a podcast transcript and get a structured brief with key insights.</p>
+        </header>
+
+        <section class="extractor">
+            <form id="extract-form">
+                <label for="transcript">Transcript</label>
+                <textarea
+                    id="transcript"
+                    name="transcript"
+                    rows="12"
+                    placeholder="Paste your podcast transcript here..."
+                    required
+                ></textarea>
+                <div class="form-actions">
+                    <button type="submit" id="extract-btn">Extract Insights</button>
+                    <span id="char-count" class="char-count"></span>
+                </div>
+            </form>
+        </section>
+
+        <section id="results" class="results" hidden>
+            <div class="results-header">
+                <h2>Insights</h2>
+                <button id="copy-btn" class="copy-btn" hidden>Copy</button>
+            </div>
+            <div id="results-content" class="results-content"></div>
+        </section>
+
+        <section id="error-section" class="error-section" hidden>
+            <p id="error-message"></p>
+        </section>
+    </main>
+
+    <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode"></button>
+    <script src="app.js"></script>
+</body>
+</html>
