@@ -1,6 +1,6 @@
 const express = require("express");
 const path = require("path");
-const Anthropic = require("@anthropic-ai/sdk").default;
+const Groq = require("groq-sdk");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -8,7 +8,11 @@ const PORT = process.env.PORT || 3000;
 app.use(express.static(path.join(__dirname, "public")));
 app.use(express.json({ limit: "1mb" }));
 
-const anthropic = new Anthropic();
+let groq;
+function getGroq() {
+  if (!groq) groq = new Groq();
+  return groq;
+}
 
 const SYSTEM_PROMPT = `You are an expert podcast analyst. Given a podcast transcript, produce a structured brief with exactly these sections:
 
@@ -39,37 +43,33 @@ app.post("/api/extract", async (req, res) => {
   res.flushHeaders();
 
   try {
-    const stream = anthropic.messages.stream({
-      model: "claude-sonnet-4-6",
+    const stream = await getGroq().chat.completions.create({
+      model: "llama-3.3-70b-versatile",
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        { role: "user", content: transcript },
+      ],
       max_tokens: 4096,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: "user", content: transcript }],
+      stream: true,
     });
 
-    stream.on("text", (text) => {
-      res.write(`data: ${JSON.stringify({ type: "text", text })}\n\n`);
-    });
+    for await (const chunk of stream) {
+      const text = chunk.choices[0]?.delta?.content;
+      if (text) {
+        res.write(`data: ${JSON.stringify({ type: "text", text })}\n\n`);
+      }
+    }
 
-    stream.on("end", () => {
-      res.write(`data: ${JSON.stringify({ type: "done" })}\n\n`);
-      res.end();
-    });
-
-    stream.on("error", (err) => {
-      console.error("Stream error:", err.message);
-      res.write(
-        `data: ${JSON.stringify({ type: "error", message: "An error occurred during extraction." })}\n\n`
-      );
-      res.end();
-    });
+    res.write(`data: ${JSON.stringify({ type: "done" })}\n\n`);
+    res.end();
 
     req.on("close", () => {
-      stream.abort();
+      stream.controller?.abort();
     });
   } catch (err) {
     console.error("API error:", err.message);
     res.write(
-      `data: ${JSON.stringify({ type: "error", message: "Failed to connect to AI service." })}\n\n`
+      `data: ${JSON.stringify({ type: "error", message: "An error occurred during extraction." })}\n\n`
     );
     res.end();
   }
