@@ -30,8 +30,11 @@ List specific, actionable things a listener could actually do based on the conve
 
 Keep it concise. No fluff. Use bullet points within sections where appropriate.`;
 
+// ~25,000 chars ≈ 6,000 tokens — stays within Groq free tier limits
+const MAX_CHARS = 25000;
+
 app.post("/api/extract", async (req, res) => {
-  const { transcript } = req.body;
+  let { transcript } = req.body;
 
   if (!transcript || !transcript.trim()) {
     return res.status(400).json({ error: "Transcript is required." });
@@ -41,6 +44,17 @@ app.post("/api/extract", async (req, res) => {
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
   res.flushHeaders();
+
+  const truncated = transcript.length > MAX_CHARS;
+  if (truncated) {
+    transcript = transcript.slice(0, MAX_CHARS);
+    res.write(
+      `data: ${JSON.stringify({
+        type: "warning",
+        message: `Transcript was truncated to ~25,000 characters (${Math.round(transcript.length / 1000)}k of ${Math.round(req.body.transcript.length / 1000)}k) to stay within free tier limits.`,
+      })}\n\n`
+    );
+  }
 
   try {
     const stream = await getGroq().chat.completions.create({
@@ -68,9 +82,11 @@ app.post("/api/extract", async (req, res) => {
     });
   } catch (err) {
     console.error("API error:", err.message);
-    res.write(
-      `data: ${JSON.stringify({ type: "error", message: "An error occurred during extraction." })}\n\n`
-    );
+    const userMessage =
+      err.status === 429
+        ? "Rate limit hit — the transcript may still be too long. Try trimming it or wait a minute and retry."
+        : err.message || "An error occurred during extraction.";
+    res.write(`data: ${JSON.stringify({ type: "error", message: userMessage })}\n\n`);
     res.end();
   }
 });

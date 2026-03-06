@@ -288,6 +288,23 @@ h1 {
   border-color: var(--accent);
 }
 
+/* Truncation warning */
+.truncation-warning {
+  font-size: 0.8rem;
+  color: #92681a;
+  background: #fef3cd;
+  border: 1px solid #f0c040;
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  margin-bottom: 16px;
+}
+
+[data-theme="dark"] .truncation-warning {
+  color: #f0c040;
+  background: #2a2200;
+  border-color: #6b5100;
+}
+
 /* Responsive */
 @media (max-width: 600px) {
   main {

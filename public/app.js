@@ -126,10 +126,21 @@ form.addEventListener("submit", async (e) => {
 
         const payload = JSON.parse(line.slice(6));
 
+        if (payload.type === "warning") {
+          const warn = document.createElement("div");
+          warn.className = "truncation-warning";
+          warn.textContent = "⚠️ " + payload.message;
+          resultsContent.innerHTML = "";
+          resultsContent.appendChild(warn);
+        }
+
         if (payload.type === "text") {
           rawMarkdown += payload.text;
+          const existing = resultsContent.querySelector(".truncation-warning");
           resultsContent.innerHTML =
-            markdownToHtml(rawMarkdown) + '<span class="cursor"></span>';
+            (existing ? existing.outerHTML : "") +
+            markdownToHtml(rawMarkdown) +
+            '<span class="cursor"></span>';
         }
 
         if (payload.type === "error") {
@@ -137,7 +148,9 @@ form.addEventListener("submit", async (e) => {
         }
 
         if (payload.type === "done") {
-          resultsContent.innerHTML = markdownToHtml(rawMarkdown);
+          const existing = resultsContent.querySelector(".truncation-warning");
+          resultsContent.innerHTML =
+            (existing ? existing.outerHTML : "") + markdownToHtml(rawMarkdown);
           copyBtn.hidden = false;
         }
       }
